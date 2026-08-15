@@ -1,18 +1,21 @@
-name: Build and publish image
+name: Build and deploy
 
 # Walking-skeleton pipeline (Phase 2 of the build plan).
 #
-# Today this proves: push to main -> image builds -> image is published,
-# using only the GITHUB_TOKEN GitHub already provides, no secrets to set up.
+# build-and-push runs on GitHub's own runners (free, always available):
+# builds the image, publishes it to GHCR. This is exactly what would
+# happen against a real VPS later.
 #
-# The one step this does NOT do yet is deploy to a live server, because
-# there's no VPS to deploy to (that's Phase 1). Once the VPS exists, add a
-# step here that SSHes in and runs `docker compose pull && docker compose
-# up -d` — that's the only piece missing to close the loop.
+# deploy runs on a SELF-HOSTED runner instead — that's your laptop,
+# standing in for the VPS during dev so there's nothing to pay for yet.
+# It pulls the image build-and-push just published and runs it. Moving
+# this to a real VPS later is a one-line change: point the runner (or an
+# SSH step) at the VPS instead of your laptop — nothing else here changes.
 
 on:
   push:
     branches: [main]
+  workflow_dispatch: # lets you trigger a run by hand from the Actions tab, for testing
 
 permissions:
   contents: read
@@ -38,4 +41,28 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: self-hosted # your laptop
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull the image just built
+        run: docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+      - name: Replace the running container
+        run: |
+          docker stop hobbymall-skeleton 2>/dev/null || true
+          docker rm hobbymall-skeleton 2>/dev/null || true
+          docker run -d \
+            --name hobbymall-skeleton \
+            --restart unless-stopped \
+            -p 8000:8000 \
             ghcr.io/${{ github.repository }}:${{ github.sha }}
