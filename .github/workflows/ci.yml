@@ -58,14 +58,13 @@ jobs:
         run: docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
 
       - name: Replace the running container
-        shell: bash # your laptop runs Windows; steps default to PowerShell,
-        # which doesn't understand ||/line-continuations the way this script
-        # needs. `shell: bash` uses Git Bash instead (already on your PATH).
+        shell: powershell # explicit and native — avoids depending on which
+        # bash (Git Bash vs WSL) happens to win PATH resolution on your laptop
         run: |
-          docker stop hobbymall-skeleton 2>/dev/null || true
-          docker rm hobbymall-skeleton 2>/dev/null || true
-          docker run -d \
-            --name hobbymall-skeleton \
-            --restart unless-stopped \
-            -p 8000:8000 \
+          docker stop hobbymall-skeleton 2>$null
+          docker rm hobbymall-skeleton 2>$null
+          docker run -d `
+            --name hobbymall-skeleton `
+            --restart unless-stopped `
+            -p 8000:8000 `
             ghcr.io/${{ github.repository }}:${{ github.sha }}
