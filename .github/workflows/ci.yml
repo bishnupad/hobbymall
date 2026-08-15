@@ -61,8 +61,15 @@ jobs:
         shell: powershell # explicit and native — avoids depending on which
         # bash (Git Bash vs WSL) happens to win PATH resolution on your laptop
         run: |
-          docker stop hobbymall-skeleton 2>$null
-          docker rm hobbymall-skeleton 2>$null
+          # GitHub's PowerShell wrapper aborts the step on any command's
+          # non-zero exit code -- `docker stop`/`rm` fail that way on the
+          # very first run, when there's no container yet. Check first
+          # instead of stopping/removing blind, so there's nothing to fail.
+          $existing = docker ps -a --filter "name=^hobbymall-skeleton$" --format "{{.Names}}"
+          if ($existing) {
+            docker stop hobbymall-skeleton
+            docker rm hobbymall-skeleton
+          }
           docker run -d `
             --name hobbymall-skeleton `
             --restart unless-stopped `
