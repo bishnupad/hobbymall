@@ -17,5 +17,18 @@ def health():
     return jsonify(status="ok", service="hobbymall-skeleton")
 
 
+@app.get("/")
+def home():
+    return """
+    <html>
+      <head><title>HobbyMall</title></head>
+      <body style="font-family: sans-serif; text-align: center; margin-top: 15vh;">
+        <h1>HobbyMall 🛠️</h1>
+        <p>Walking skeleton is live. Real store coming soon.</p>
+      </body>
+    </html>
+    """
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
