@@ -1,0 +1,41 @@
+name: Build and publish image
+
+# Walking-skeleton pipeline (Phase 2 of the build plan).
+#
+# Today this proves: push to main -> image builds -> image is published,
+# using only the GITHUB_TOKEN GitHub already provides, no secrets to set up.
+#
+# The one step this does NOT do yet is deploy to a live server, because
+# there's no VPS to deploy to (that's Phase 1). Once the VPS exists, add a
+# step here that SSHes in and runs `docker compose pull && docker compose
+# up -d` — that's the only piece missing to close the loop.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
