@@ -4,3 +4,18 @@ services:
     ports:
       - "8000:8000"
     restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: hobbymall
+      POSTGRES_PASSWORD: hobbymall
+      POSTGRES_DB: catalog
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
